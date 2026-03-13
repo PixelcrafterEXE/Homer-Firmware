@@ -16,6 +16,7 @@ rsync -a \
 
 on_chroot << EOF
 chown -R ${FIRST_USER_NAME}:${FIRST_USER_NAME} /home/${FIRST_USER_NAME}/Software
+usermod -a -G video,input,render ${FIRST_USER_NAME}
 EOF
 
 # ── Systemd service ───────────────────────────────────────────────────────────

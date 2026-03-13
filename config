@@ -1,6 +1,3 @@
-#overwrite old cached builds
-CONTINUE=1
-
 IMG_NAME="homerpi"
 RELEASE="trixie"
 

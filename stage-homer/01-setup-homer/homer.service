@@ -1,11 +1,12 @@
 [Unit]
 Description=HomerPi Application
-After=network.target
+After=network.target systemd-user-sessions.service plymouth-quit-wait.service
 
 [Service]
 Type=simple
 User=${FIRST_USER_NAME}
 WorkingDirectory=/home/${FIRST_USER_NAME}/Software
+Environment="QT_QPA_PLATFORM=eglfs"
 ExecStart=/usr/bin/python3 /home/${FIRST_USER_NAME}/Software/main.py
 Restart=on-failure
 RestartSec=5
