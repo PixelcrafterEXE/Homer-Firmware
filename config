@@ -1,0 +1,34 @@
+#overwrite old cached builds
+CONTINUE=1
+
+IMG_NAME="homerpi"
+RELEASE="trixie"
+
+# Resolve BASE_DIR when not already set (e.g. when sourced by build-docker.sh before build.sh runs)
+BASE_DIR="${BASE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+
+# Minimal image
+# Builds only the lite base (stage0-2) plus the Homer application stage.
+# Desktop stages (3/4/5) are intentionally excluded.
+STAGE_LIST="${BASE_DIR}/stage0 ${BASE_DIR}/stage1 ${BASE_DIR}/stage2 ${BASE_DIR}/stage-homer"
+
+# Credentials
+# WARNING: change FIRST_USER_PASS before deploying to production.
+FIRST_USER_NAME="homerpi"
+FIRST_USER_PASS="homerpi"
+DISABLE_FIRST_BOOT_USER_RENAME=1
+#PASSWORDLESS_SUDO=1
+
+# Network
+TARGET_HOSTNAME="homerpi"
+#ENABLE_SSH=1
+ENABLE_CLOUD_INIT=0
+
+# Locate
+LOCALE_DEFAULT="de_DE.UTF-8"
+TIMEZONE_DEFAULT="Europe/Berlin"
+KEYBOARD_KEYMAP="de"
+KEYBOARD_LAYOUT="German"
+
+# Output
+DEPLOY_COMPRESSION="xz"
