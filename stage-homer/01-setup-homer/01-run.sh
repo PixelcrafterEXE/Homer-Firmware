@@ -21,7 +21,7 @@ EOF
 
 # ── Systemd service ───────────────────────────────────────────────────────────
 # copy a pre-defined unit file and substitute the user name
-SERVICE_TEMPLATE="${BASE_DIR}/../stage-homer/01-setup-homer/homer.service"
+SERVICE_TEMPLATE="${BASE_DIR}/stage-homer/01-setup-homer/homer.service"
 mkdir -p "$(dirname "${SERVICE_FILE}")"
 cp "${SERVICE_TEMPLATE}" "${SERVICE_FILE}"
 # perform variable substitution in-place
