@@ -25,7 +25,7 @@ SERVICE_TEMPLATE="${BASE_DIR}/stage-homer/01-setup-homer/homer.service"
 mkdir -p "$(dirname "${SERVICE_FILE}")"
 cp "${SERVICE_TEMPLATE}" "${SERVICE_FILE}"
 # perform variable substitution in-place
-sed -i "s|\\${FIRST_USER_NAME}|${FIRST_USER_NAME}|g" "${SERVICE_FILE}"
+sed -i "s|\${FIRST_USER_NAME}|${FIRST_USER_NAME}|g" "${SERVICE_FILE}"
 
 on_chroot << EOF
 systemctl enable homer.service
