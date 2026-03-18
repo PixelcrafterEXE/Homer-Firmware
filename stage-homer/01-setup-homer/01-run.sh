@@ -47,3 +47,19 @@ mkdir -p "${AUTOLOGIN_DIR}"
 	echo 'ExecStart='
 	echo "ExecStart=-/sbin/agetty --autologin ${FIRST_USER_NAME} --noclear %I \$TERM"
 } > "${AUTOLOGIN_DIR}/autologin.conf"
+
+
+# ── Configure X11 for VC4 GPU ─────────────────────────────────────────────────
+mkdir -p "${ROOTFS_DIR}/etc/X11/xorg.conf.d"
+cat > "${ROOTFS_DIR}/etc/X11/xorg.conf.d/99-vc4.conf" << 'XORG_EOF'
+Section "Device"
+    Identifier "Raspberry Pi VC4"
+    Driver "modesetting"
+    Option "kmsdev" "/dev/dri/card1"
+EndSection
+
+Section "Screen"
+    Identifier "Default Screen"
+    Device "Raspberry Pi VC4"
+EndSection
+XORG_EOF
