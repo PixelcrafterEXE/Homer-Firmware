@@ -1,2 +1,8 @@
 python3-pip
 python3-tk
+xserver-xorg
+xserver-xorg-video-all
+xserver-xorg-legacy
+xinit
+x11-xserver-utils
+matchbox-window-manager

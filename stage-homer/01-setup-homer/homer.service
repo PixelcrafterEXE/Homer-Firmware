@@ -1,6 +1,6 @@
 [Unit]
 Description=HomerPi Application
-After=graphical.target systemd-user-sessions.service plymouth-quit-wait.service
+After=systemd-user-sessions.service plymouth-quit-wait.service
 
 [Service]
 Type=simple
@@ -8,11 +8,18 @@ User=${FIRST_USER_NAME}
 WorkingDirectory=/home/${FIRST_USER_NAME}/Software
 Environment="DISPLAY=:0"
 Environment="XAUTHORITY=/home/${FIRST_USER_NAME}/.Xauthority"
-ExecStart=/usr/bin/python3 /home/${FIRST_USER_NAME}/Software/main.py
+# Use startx with explicit paths. Arguments after -- are passed to Xorg
+ExecStart=/usr/bin/startx /usr/bin/python3 /home/${FIRST_USER_NAME}/Software/main.py -- :0 vt7 -nocursor -s 0 dpms
 Restart=on-failure
 RestartSec=5
-StandardOutput=journal
-StandardError=journal
+
+# Bind to tty7
+StandardInput=tty
+TTYPath=/dev/tty7
+TTYReset=yes
+TTYVHangup=yes
+TTYVTAlloc=yes
+PAMName=login
 
 [Install]
 WantedBy=graphical.target

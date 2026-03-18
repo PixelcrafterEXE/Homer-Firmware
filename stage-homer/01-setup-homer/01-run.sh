@@ -16,8 +16,14 @@ rsync -a \
 
 on_chroot << EOF
 chown -R ${FIRST_USER_NAME}:${FIRST_USER_NAME} /home/${FIRST_USER_NAME}/Software
-usermod -a -G video,input,render ${FIRST_USER_NAME}
+usermod -a -G video,input,render,tty ${FIRST_USER_NAME}
 EOF
+
+# ── Configure X11 for Systemd ─────────────────────────────────────────────────
+# Allow non-console users (like systemd services) to start the X server
+mkdir -p "${ROOTFS_DIR}/etc/X11"
+echo "allowed_users=anybody" > "${ROOTFS_DIR}/etc/X11/Xwrapper.config"
+echo "needs_root_rights=yes" >> "${ROOTFS_DIR}/etc/X11/Xwrapper.config"
 
 # ── Systemd service ───────────────────────────────────────────────────────────
 # copy a pre-defined unit file and substitute the user name
