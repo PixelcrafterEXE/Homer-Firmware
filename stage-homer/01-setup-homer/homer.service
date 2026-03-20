@@ -6,7 +6,7 @@ After=multi-user.target
 Type=simple
 User=${FIRST_USER_NAME}
 WorkingDirectory=/home/${FIRST_USER_NAME}/Software
-ExecStart=/usr/bin/xinit /bin/sh -c "matchbox-window-manager -use_cursor no -use_titlebar no & sleep 2 && exec python3 main.py" -- :0 vt7 -nocursor -s 0 -dpms
+ExecStart=/usr/bin/xinit /bin/sh -c "matchbox-window-manager -use_cursor yes -use_titlebar no & sleep 2 && exec python3 main.py" -- :0 vt7 -nocursor -s 0 -dpms
 Restart=always
 RestartSec=3
 
