@@ -6,3 +6,5 @@ xserver-xorg-legacy
 xinit
 x11-xserver-utils
 matchbox-window-manager
+onboard
+dbus-x11

@@ -49,17 +49,55 @@ mkdir -p "${AUTOLOGIN_DIR}"
 } > "${AUTOLOGIN_DIR}/autologin.conf"
 
 
-# ── Configure X11 for VC4 GPU ─────────────────────────────────────────────────
+# ── Configure X11 for VC4 GPU (portrait / rotate-right) ──────────────────────
 mkdir -p "${ROOTFS_DIR}/etc/X11/xorg.conf.d"
 cat > "${ROOTFS_DIR}/etc/X11/xorg.conf.d/99-vc4.conf" << 'XORG_EOF'
 Section "Device"
     Identifier "Raspberry Pi VC4"
     Driver "modesetting"
     Option "kmsdev" "/dev/dri/card1"
+    # Portrait mode – 90 ° clockwise (landscape-right edge becomes top)
+    Option "Rotate" "CW"
 EndSection
 
 Section "Screen"
     Identifier "Default Screen"
     Device "Raspberry Pi VC4"
 EndSection
+
+# Rotate libinput touch/pointer coordinates to match the portrait display.
+# Transformation matrix for 90 ° CW:
+#   x_new =  y_old
+#   y_new = -x_old + 1
+Section "InputClass"
+    Identifier "Touchscreen portrait"
+    MatchIsTouchscreen "on"
+    Option "TransformationMatrix" "0 1 0 -1 0 1 0 0 1"
+EndSection
 XORG_EOF
+
+# ── System-level dconf defaults for onboard on-screen keyboard ────────────────
+mkdir -p "${ROOTFS_DIR}/etc/dconf/db/local.d"
+cat > "${ROOTFS_DIR}/etc/dconf/db/local.d/00-homerpi" << 'DCONF_EOF'
+[org/onboard]
+layout='Phone'
+start-minimized=true
+show-status-icon=false
+
+[org/onboard/window]
+docking=true
+docking-edge='bottom'
+keep-docking=true
+DCONF_EOF
+
+# Provide a dconf profile that includes the system-level database.
+# Only write the file if it does not already exist so we don't clobber a
+# profile written by an earlier stage.
+if [ ! -f "${ROOTFS_DIR}/etc/dconf/profile/user" ]; then
+	mkdir -p "${ROOTFS_DIR}/etc/dconf/profile"
+	printf 'user-db:user\nsystem-db:local\n' > "${ROOTFS_DIR}/etc/dconf/profile/user"
+fi
+
+on_chroot << EOF
+dconf update
+EOF
