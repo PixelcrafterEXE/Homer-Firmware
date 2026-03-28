@@ -49,15 +49,15 @@ mkdir -p "${AUTOLOGIN_DIR}"
 } > "${AUTOLOGIN_DIR}/autologin.conf"
 
 
-# ── Configure X11 for VC4 GPU (portrait / rotate-right) ──────────────────────
+# ── Configure X11 for VC4 GPU ─────────────────────────────────────────────────
+# NOTE: modesetting does not honour Option "Rotate"; rotation is applied at
+# runtime via 'xrandr --rotate right' in the homer.service ExecStart command.
 mkdir -p "${ROOTFS_DIR}/etc/X11/xorg.conf.d"
 cat > "${ROOTFS_DIR}/etc/X11/xorg.conf.d/99-vc4.conf" << 'XORG_EOF'
 Section "Device"
     Identifier "Raspberry Pi VC4"
     Driver "modesetting"
     Option "kmsdev" "/dev/dri/card1"
-    # Portrait mode – 90 ° clockwise (landscape-right edge becomes top)
-    Option "Rotate" "CW"
 EndSection
 
 Section "Screen"
