@@ -81,13 +81,17 @@ mkdir -p "${ROOTFS_DIR}/etc/dconf/db/local.d"
 cat > "${ROOTFS_DIR}/etc/dconf/db/local.d/00-homerpi" << 'DCONF_EOF'
 [org/onboard]
 layout='Phone'
+theme='Droid'
 start-minimized=true
 show-status-icon=false
 
+[org/onboard/auto-show]
+enabled=true
+
 [org/onboard/window]
-docking=true
+docking=false
 docking-edge='bottom'
-keep-docking=true
+keep-docking=false
 DCONF_EOF
 
 # Provide a dconf profile that includes the system-level database.
