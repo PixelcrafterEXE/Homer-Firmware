@@ -86,12 +86,18 @@ start-minimized=true
 show-status-icon=false
 
 [org/onboard/auto-show]
-enabled=true
+enabled=false
 
 [org/onboard/window]
-docking=false
-docking-edge='bottom'
-keep-docking=false
+docking-enabled=false
+force-to-top=true
+docking-shrink-workarea=false
+
+[org/onboard/window/portrait]
+x=0
+y=1720
+width=1080
+height=200
 DCONF_EOF
 
 # Provide a dconf profile that includes the system-level database.
