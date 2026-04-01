@@ -35,6 +35,25 @@ polkit.addRule(function(action, subject) {
 });
 POLKIT_EOF
 
+# ── Allow user to mount/unmount USB drives via udisksctl (no sudo required) ───
+# The homer application exports CSV measurements to a USB stick.  udisksctl
+# goes through the UDisks2 D-Bus service which enforces polkit.  When the
+# process has no controlling terminal (systemd service) udisksctl cannot create
+# a polkit authentication agent, so the mount is rejected with
+# NotAuthorizedCanObtain.  The rule below grants the two relevant actions
+# unconditionally for the application user so polkit returns YES before any
+# agent is attempted.
+cat > "${ROOTFS_DIR}/etc/polkit-1/rules.d/11-udisks2.rules" << POLKIT_EOF
+polkit.addRule(function(action, subject) {
+    if ((action.id === "org.freedesktop.udisks2.filesystem-mount" ||
+         action.id === "org.freedesktop.udisks2.filesystem-mount-system" ||
+         action.id === "org.freedesktop.udisks2.filesystem-unmount-others") &&
+        subject.user === "${FIRST_USER_NAME}") {
+        return polkit.Result.YES;
+    }
+});
+POLKIT_EOF
+
 # ── Configure X11 for Systemd ─────────────────────────────────────────────────
 # Allow non-console users (like systemd services) to start the X server
 mkdir -p "${ROOTFS_DIR}/etc/X11"
