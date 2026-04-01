@@ -19,6 +19,22 @@ chown -R ${FIRST_USER_NAME}:${FIRST_USER_NAME} /home/${FIRST_USER_NAME}/Software
 usermod -a -G video,input,render,tty ${FIRST_USER_NAME}
 EOF
 
+# ── Allow user to set system clock via timedatectl (no sudo required) ─────────
+# The homer application syncs the OS clock from the sensor's EEPROM RTC.
+# Instead of granting broad sudo rights, we install a targeted polkit rule that
+# allows only the application user to invoke the two timedate1 D-Bus actions
+# (set-time / set-ntp) without an authentication prompt.
+mkdir -p "${ROOTFS_DIR}/etc/polkit-1/rules.d"
+cat > "${ROOTFS_DIR}/etc/polkit-1/rules.d/10-timedate.rules" << POLKIT_EOF
+polkit.addRule(function(action, subject) {
+    if ((action.id === "org.freedesktop.timedate1.set-time" ||
+         action.id === "org.freedesktop.timedate1.set-ntp") &&
+        subject.user === "${FIRST_USER_NAME}") {
+        return polkit.Result.YES;
+    }
+});
+POLKIT_EOF
+
 # ── Configure X11 for Systemd ─────────────────────────────────────────────────
 # Allow non-console users (like systemd services) to start the X server
 mkdir -p "${ROOTFS_DIR}/etc/X11"

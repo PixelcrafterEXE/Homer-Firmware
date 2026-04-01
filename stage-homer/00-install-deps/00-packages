@@ -8,3 +8,4 @@ x11-xserver-utils
 matchbox-window-manager
 onboard
 dbus-x11
+policykit-1
