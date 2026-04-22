@@ -16,7 +16,7 @@ rsync -a \
 
 on_chroot << EOF
 chown -R ${FIRST_USER_NAME}:${FIRST_USER_NAME} /home/${FIRST_USER_NAME}/Software
-usermod -a -G video,input,render,tty ${FIRST_USER_NAME}
+usermod -a -G video,input,render,tty,plugdev ${FIRST_USER_NAME}
 EOF
 
 # ── Allow user to set system clock via timedatectl (no sudo required) ─────────
@@ -46,7 +46,10 @@ POLKIT_EOF
 cat > "${ROOTFS_DIR}/etc/polkit-1/rules.d/11-udisks2.rules" << POLKIT_EOF
 polkit.addRule(function(action, subject) {
     if ((action.id === "org.freedesktop.udisks2.filesystem-mount" ||
+         action.id === "org.freedesktop.udisks2.filesystem-mount-other-seat" ||
          action.id === "org.freedesktop.udisks2.filesystem-mount-system" ||
+         action.id === "org.freedesktop.udisks2.filesystem-mount-fstab" ||
+         action.id === "org.freedesktop.udisks2.filesystem-unmount" ||
          action.id === "org.freedesktop.udisks2.filesystem-unmount-others") &&
         subject.user === "${FIRST_USER_NAME}") {
         return polkit.Result.YES;
@@ -85,23 +88,20 @@ mkdir -p "${AUTOLOGIN_DIR}"
 
 
 # ── Configure X11 for VC4 GPU ─────────────────────────────────────────────────
-# NOTE: modesetting does not honour Option "Rotate"; rotation is applied at
-# runtime via 'xrandr --rotate right' in the homer.service ExecStart command.
+# Do NOT specify a Device/Screen section with a hardcoded kmsdev path.
+# On Pi 4 the display DRM device is card0; on Pi 5 it is also card0 (the rp1
+# southbridge), so card1 never exists as a display node.  Letting modesetting
+# auto-detect the KMS device avoids "no screens found" across board revisions.
+#
+# Rotation is applied at runtime via xrandr in the homer.service ExecStart
+# command.  The connected output is detected dynamically at runtime because
+# on Pi 4 it is DSI-1 and on Pi 5 it is DSI-2, and xrandr exits 0 (with only
+# a warning) when a non-existent output name is specified, making || fallbacks
+# unreliable.
 mkdir -p "${ROOTFS_DIR}/etc/X11/xorg.conf.d"
 cat > "${ROOTFS_DIR}/etc/X11/xorg.conf.d/99-vc4.conf" << 'XORG_EOF'
-Section "Device"
-    Identifier "Raspberry Pi VC4"
-    Driver "modesetting"
-    Option "kmsdev" "/dev/dri/card1"
-EndSection
-
-Section "Screen"
-    Identifier "Default Screen"
-    Device "Raspberry Pi VC4"
-EndSection
-
 # Rotate libinput touch/pointer coordinates to match the portrait display.
-# Transformation matrix for 90 ° CW:
+# Transformation matrix for 90 ° CW (--rotate right):
 #   x_new =  y_old
 #   y_new = -x_old + 1
 Section "InputClass"
@@ -130,8 +130,8 @@ docking-shrink-workarea=false
 
 [org/onboard/window/portrait]
 x=0
-y=1720
-width=1080
+y=1080
+width=800
 height=200
 DCONF_EOF
 
@@ -146,3 +146,27 @@ fi
 on_chroot << EOF
 dconf update
 EOF
+
+# ── Waveshare 8inch DSI LCD – boot firmware configuration ─────────────────────
+# The display requires the vc4-kms-dsi-waveshare-panel overlay (8_0_inch variant).
+# display_auto_detect is disabled so the firmware does not try to probe and
+# override the overlay we set here.  Portrait orientation (90° CW) is enforced
+# at the kernel/DRM level via the video= parameter in cmdline.txt; xrandr and
+# the libinput TransformationMatrix configured above keep X11 in sync.
+CONFIG="${ROOTFS_DIR}/boot/firmware/config.txt"
+CMDLINE="${ROOTFS_DIR}/boot/firmware/cmdline.txt"
+
+# Disable auto-detect so our explicit overlay is not overridden
+sed -i 's/^display_auto_detect=1/display_auto_detect=0/' "${CONFIG}"
+
+# Append the DSI overlay under [all] if not already present
+if ! grep -q 'vc4-kms-dsi-waveshare-panel' "${CONFIG}"; then
+	printf '\n# Waveshare 8inch DSI LCD (800x480) – portrait (90° CW)\ndtoverlay=vc4-kms-dsi-waveshare-panel,8_0_inch\n' >> "${CONFIG}"
+fi
+
+# Prepend display resolution hint to cmdline.txt if not already present.
+# Rotation is handled entirely by xrandr inside homer.service so we do NOT
+# pass rotate= here – a kernel-level rotate would double-rotate the output.
+if ! grep -q 'video=DSI-1' "${CMDLINE}"; then
+	sed -i 's/^/video=DSI-1:1280x800M@60 /' "${CMDLINE}"
+fi
