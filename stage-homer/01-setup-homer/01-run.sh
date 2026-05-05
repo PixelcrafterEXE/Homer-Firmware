@@ -100,14 +100,11 @@ mkdir -p "${AUTOLOGIN_DIR}"
 # unreliable.
 mkdir -p "${ROOTFS_DIR}/etc/X11/xorg.conf.d"
 cat > "${ROOTFS_DIR}/etc/X11/xorg.conf.d/99-vc4.conf" << 'XORG_EOF'
-# Rotate libinput touch/pointer coordinates to match the portrait display.
-# Transformation matrix for 90 ° CW (--rotate right):
-#   x_new =  y_old
-#   y_new = -x_old + 1
+# No coordinate transformation needed – the panel is natively portrait (800x1280)
+# and no xrandr rotation is applied.
 Section "InputClass"
-    Identifier "Touchscreen portrait"
+    Identifier "Touchscreen"
     MatchIsTouchscreen "on"
-    Option "TransformationMatrix" "0 1 0 -1 0 1 0 0 1"
 EndSection
 XORG_EOF
 
@@ -147,12 +144,13 @@ on_chroot << EOF
 dconf update
 EOF
 
-# ── Waveshare 8inch DSI LCD – boot firmware configuration ─────────────────────
-# The display requires the vc4-kms-dsi-waveshare-panel overlay (8_0_inch variant).
-# display_auto_detect is disabled so the firmware does not try to probe and
-# override the overlay we set here.  Portrait orientation (90° CW) is enforced
-# at the kernel/DRM level via the video= parameter in cmdline.txt; xrandr and
-# the libinput TransformationMatrix configured above keep X11 in sync.
+# ── Waveshare 8inch DSI LCD v2 – boot firmware configuration ─────────────────
+# The display (vc4-kms-dsi-waveshare-panel-v2, 8_0_inch_a) is natively portrait
+# (800×1280).  No xrandr rotation is applied; the app runs at native resolution.
+# The dsi0 overlay param routes I2C to i2c_csi_dsi0 (the DISP 0 bus) and
+# causes the kernel to name the output DSI-1.  Without dsi0 the backlight
+# controller (I2C 0x45) ends up on the wrong bus and all sysfs writes fail.
+# display_auto_detect is disabled so the firmware does not override our overlay.
 CONFIG="${ROOTFS_DIR}/boot/firmware/config.txt"
 CMDLINE="${ROOTFS_DIR}/boot/firmware/cmdline.txt"
 
@@ -161,12 +159,12 @@ sed -i 's/^display_auto_detect=1/display_auto_detect=0/' "${CONFIG}"
 
 # Append the DSI overlay under [all] if not already present
 if ! grep -q 'vc4-kms-dsi-waveshare-panel' "${CONFIG}"; then
-	printf '\n# Waveshare 8inch DSI LCD (800x480) – portrait (90° CW)\ndtoverlay=vc4-kms-dsi-waveshare-panel,8_0_inch\n' >> "${CONFIG}"
+	printf '\n# Waveshare 8inch DSI LCD v2 – native portrait 800x1280\ndtoverlay=vc4-kms-dsi-waveshare-panel-v2,8_0_inch_a,dsi0\n' >> "${CONFIG}"
 fi
 
 # Prepend display resolution hint to cmdline.txt if not already present.
-# Rotation is handled entirely by xrandr inside homer.service so we do NOT
-# pass rotate= here – a kernel-level rotate would double-rotate the output.
+# Panel native resolution is 800x1280 (portrait).  No kernel-level rotation.
+# With dsi0 param the kernel names this output DSI-1 (Pi 5 DISP 0 = rp1 dsi@118000).
 if ! grep -q 'video=DSI-1' "${CMDLINE}"; then
-	sed -i 's/^/video=DSI-1:1280x800M@60 /' "${CMDLINE}"
+	sed -i 's/^/video=DSI-1:800x1280M@60 /' "${CMDLINE}"
 fi
